@@ -37,17 +37,13 @@ public class EncodedFileList extends AbstractListDecorator<EncodedFile> {
      * Collects the encoded files from the given file using the specified charsets.
      * 
      * @param file     the file to collect encoded files from
-     * @param charsets the list of charsets to use for encoding
+     * @param charsets the charsets to use for encoding the file
      * @return the updated EncodedFileList object
-     * @throws NullPointerException     if either file or charsets is null
-     * @throws IllegalArgumentException if charsets is empty
+     * @throws NullPointerException if either file or charsets is null
      */
-    public EncodedFileList collect(File file, List<Charset> charsets) {
+    public EncodedFileList collect(File file, Iterable<Charset> charsets) {
         Objects.requireNonNull(file, "file is null");
         Objects.requireNonNull(charsets, "charsets is null");
-        if (charsets.isEmpty()) {
-            throw new IllegalArgumentException("charsets is empty");
-        }
         for (Charset charset : charsets) {
             Objects.requireNonNull(charset, "charset is null");
             add(new EncodedFile(file, charset));
@@ -58,10 +54,12 @@ public class EncodedFileList extends AbstractListDecorator<EncodedFile> {
     /**
      * Finds the first valid zip file in the list of encoded files.
      *
-     * @return An Optional containing the first valid EncodedFile as a zip file, or an empty Optional if no valid zip file is found.
+     * @return An Optional containing the first valid EncodedFile as a zip file, or
+     *         an empty Optional if no valid zip file is found.
      */
     public Optional<EncodedFile> findFirstValidZipFile() {
         for (EncodedFile encodedFile : decorated()) {
+            // Try to open the zip file and return the encoded file if successful
             try (ZipFile zipFile = encodedFile.zipFile()) {
                 return Optional.of(encodedFile);
             } catch (IOException e) {

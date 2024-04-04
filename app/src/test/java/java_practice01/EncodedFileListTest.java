@@ -72,16 +72,6 @@ public class EncodedFileListTest {
     }
 
     /**
-     * Test case to verify that an IllegalArgumentException is thrown when
-     * collecting encoded files with an empty list of charsets.
-     */
-    @Test
-    void testCollectEmptyCharsets() {
-        List<Charset> charsets = new ArrayList<>();
-        assertThrows(IllegalArgumentException.class, () -> encodedFileList.collect(file, charsets));
-    }
-
-    /**
      * Test case for the {@link EncodedFileList#findFirstValidZipFile()} method.
      * It verifies that the method correctly finds the first valid zip file in the
      * encoded file list.
