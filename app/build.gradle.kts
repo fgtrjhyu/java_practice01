@@ -16,6 +16,8 @@ repositories {
 }
 
 dependencies {
+    implementation("org.apache.commons:commons-collections4:4.0")
+    
     // Use JUnit Jupiter for testing.
     testImplementation(libs.junit.jupiter)
 
