@@ -90,7 +90,7 @@ public class EncodedFileList extends AbstractListDecorator<EncodedFile> {
     public Optional<EncodedFile> findFirstValidZipFile() {
         for (EncodedFile encodedFile : decorated()) {
             // Try to open the zip file and return the encoded file if successful
-            try (ZipFile zipFile = encodedFile.zipFile()) {
+            try (ZipFile zipFile = encodedFile.openZipFile()) {
                 if (encodedFile.validateEntryNames(zipFile)) {
                     return Optional.of(encodedFile);
                 }
@@ -110,7 +110,7 @@ public class EncodedFileList extends AbstractListDecorator<EncodedFile> {
     public EncodedFileList availables() {
         EncodedFileList result = new EncodedFileList(new LinkedList<EncodedFile>());
         for (EncodedFile encodedFile : decorated()) {
-            try (ZipFile zipFile = encodedFile.zipFile()) {
+            try (ZipFile zipFile = encodedFile.openZipFile()) {
                 if (encodedFile.validateEntryNames(zipFile)) {
                     result.add(encodedFile);
                 } else {

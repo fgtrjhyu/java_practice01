@@ -40,7 +40,7 @@ public class EncodedFileTest {
         assertEquals(shiftJisFile, encodedFile.file());
         assertEquals(shiftJis, encodedFile.charset());
         // Call the zipOutputStream() method
-        try (var stream = encodedFile.getZipOutputStream()) {
+        try (var stream = encodedFile.openZipOutputStream()) {
             ZipEntry entry = new ZipEntry("日本語エントリ");
             stream.putNextEntry(entry);
             stream.write("日本語".getBytes(encodedFile.charset()));
@@ -48,7 +48,7 @@ public class EncodedFileTest {
         } catch (IOException e) {
             fail(e.getMessage());
         }
-        try (var stream = encodedFile.getZipInputStream()) {
+        try (var stream = encodedFile.openZipInputStream()) {
             for (ZipEntry entry = stream.getNextEntry(); entry != null; entry = stream.getNextEntry()) {
                 assertEquals("日本語エントリ", entry.getName());
                 byte[] buffer = new byte[1024];
@@ -70,7 +70,7 @@ public class EncodedFileTest {
         String firstEntryName = new String(firstEntryNameBytes, utf8);
         String secondEntryName = "￭🧦";
         // Call the zipOutputStream() method
-        try (var stream = encodedFile.getZipOutputStream()) {
+        try (var stream = encodedFile.openZipOutputStream()) {
             byte[] buffer;
             //
             ZipEntry firstEntry = new ZipEntry(firstEntryName);
@@ -89,7 +89,7 @@ public class EncodedFileTest {
         } catch (IOException e) {
             fail(e.getMessage());
         }
-        try (var stream = encodedFile.getZipInputStream()) {
+        try (var stream = encodedFile.openZipInputStream()) {
             byte[] buffer = new byte[1024];
             int len;
             //
@@ -115,7 +115,7 @@ public class EncodedFileTest {
         assertEquals(file, encodedFile.file());
         assertEquals(shiftJis, encodedFile.charset());
         // Call the zipFile() method
-        try (var zipFile = encodedFile.zipFile()) {
+        try (var zipFile = encodedFile.openZipFile()) {
             assertNotNull(zipFile);
         } catch (IOException e) {
             fail(e.getMessage());
@@ -127,7 +127,7 @@ public class EncodedFileTest {
         EncodedFile encodedFile = new EncodedFile(file, utf8);
         assertEquals(file, encodedFile.file());
         assertEquals(utf8, encodedFile.charset());
-        assertThrows(IOException.class, () -> encodedFile.zipFile());
+        assertThrows(IOException.class, () -> encodedFile.openZipFile());
     }
 
     @Test

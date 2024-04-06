@@ -101,7 +101,7 @@ public class EncodedFileListTest {
         result.ifPresent(encodedFile -> {
             assertEquals(fileShiftJis, encodedFile.file());
             assertEquals(shiftJis, encodedFile.charset());
-            try (var zipFile = encodedFile.zipFile()) {
+            try (var zipFile = encodedFile.openZipFile()) {
                 assertNotNull(zipFile);
             } catch (Exception e) {
                 fail();
