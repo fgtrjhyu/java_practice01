@@ -11,24 +11,102 @@ import java.nio.charset.Charset;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import java.util.zip.ZipEntry;
 
 /**
  * This class contains unit tests for the EncodedFile class.
  */
 public class EncodedFileTest {
     private File file;
+
     private Charset shiftJis;
-    private Charset eucJp;
+    private File shiftJisFile;
+
     private Charset utf8;
-    private Charset iso2022jp;
+    private File utf8File;
 
     @BeforeEach
     void setUp() {
         file = new File("src\\test\\resources\\test.zip");
         shiftJis = Charset.forName("Shift_JIS");
-        eucJp = Charset.forName("euc-jp");
+        shiftJisFile = new File("src\\test\\resources\\testShiftJis.zip");
         utf8 = Charset.forName("UTF-8");
-        iso2022jp = Charset.forName("ISO-2022-JP");
+        utf8File = new File("src\\test\\resources\\testUtf8.zip");
+    }
+
+    @Test
+    void testZipOutputStreamShiftJis() throws IOException {
+        EncodedFile encodedFile = new EncodedFile(shiftJisFile, shiftJis);
+        assertEquals(shiftJisFile, encodedFile.file());
+        assertEquals(shiftJis, encodedFile.charset());
+        // Call the zipOutputStream() method
+        try (var stream = encodedFile.getZipOutputStream()) {
+            ZipEntry entry = new ZipEntry("日本語エントリ");
+            stream.putNextEntry(entry);
+            stream.write("日本語".getBytes(encodedFile.charset()));
+            stream.closeEntry();
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
+        try (var stream = encodedFile.getZipInputStream()) {
+            for (ZipEntry entry = stream.getNextEntry(); entry != null; entry = stream.getNextEntry()) {
+                assertEquals("日本語エントリ", entry.getName());
+                byte[] buffer = new byte[1024];
+                int len = stream.read(buffer);
+                assertEquals("日本語", new String(buffer, 0, len, encodedFile.charset()));
+            }
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    void testZipOutputStreamUtf8() throws IOException {
+        EncodedFile encodedFile = new EncodedFile(utf8File, utf8);
+        assertEquals(utf8File, encodedFile.file());
+        assertEquals(utf8, encodedFile.charset());
+
+        byte[] firstEntryNameBytes = new byte[] { (byte) 0x81, (byte) 0x40, (byte) 0x81 };
+        String firstEntryName = new String(firstEntryNameBytes, utf8);
+        String secondEntryName = "￭🧦";
+        // Call the zipOutputStream() method
+        try (var stream = encodedFile.getZipOutputStream()) {
+            byte[] buffer;
+            //
+            ZipEntry firstEntry = new ZipEntry(firstEntryName);
+            buffer = "ࠀ🦗🦓".getBytes(encodedFile.charset());
+            firstEntry.setSize(buffer.length);
+            stream.putNextEntry(firstEntry);
+            stream.write(buffer);
+            stream.closeEntry();
+            //
+            ZipEntry secondEntry = new ZipEntry(secondEntryName);
+            buffer = "ࠀ🦗".getBytes(encodedFile.charset());
+            secondEntry.setSize(buffer.length);
+            stream.putNextEntry(secondEntry);
+            stream.write(buffer);
+            stream.closeEntry();
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
+        try (var stream = encodedFile.getZipInputStream()) {
+            byte[] buffer = new byte[1024];
+            int len;
+            //
+            ZipEntry firstEntry = stream.getNextEntry();
+            assertEquals(firstEntryName, firstEntry.getName());
+            len = stream.read(buffer);
+            assertEquals("ࠀ🦗🦓", new String(buffer, 0, len, encodedFile.charset()));
+            stream.closeEntry();
+            //
+            ZipEntry secondEntry = stream.getNextEntry();
+            assertEquals(secondEntryName, secondEntry.getName());
+            len = stream.read(buffer);
+            assertEquals("ࠀ🦗", new String(buffer, 0, len, encodedFile.charset()));
+            stream.closeEntry();
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
     }
 
     @Test
@@ -45,26 +123,10 @@ public class EncodedFileTest {
     }
 
     @Test
-    void testZipFileWithEucJp() throws IOException {
-        EncodedFile encodedFile = new EncodedFile(file, eucJp);
-        assertEquals(file, encodedFile.file());
-        assertEquals(eucJp, encodedFile.charset());
-        assertThrows(IOException.class, () -> encodedFile.zipFile());
-    }
-
-    @Test
-    void testZipFileWithUtf9() throws IOException {
+    void testZipFileWithUtf8() throws IOException {
         EncodedFile encodedFile = new EncodedFile(file, utf8);
         assertEquals(file, encodedFile.file());
         assertEquals(utf8, encodedFile.charset());
-        assertThrows(IOException.class, () -> encodedFile.zipFile());
-    }
-
-    @Test
-    void testZipFileWithIso2022Jp() throws IOException {
-        EncodedFile encodedFile = new EncodedFile(file, iso2022jp);
-        assertEquals(file, encodedFile.file());
-        assertEquals(iso2022jp, encodedFile.charset());
         assertThrows(IOException.class, () -> encodedFile.zipFile());
     }
 

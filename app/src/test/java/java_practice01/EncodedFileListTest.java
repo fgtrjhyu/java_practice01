@@ -19,9 +19,9 @@ public class EncodedFileListTest {
     private EncodedFileList encodedFileList;
     private File file;
     private Charset shiftJis;
-    private Charset eucJp;
+    private File fileShiftJis;
     private Charset utf8;
-    private Charset iso2022jp;
+    private File fileUtf8;
 
     @BeforeEach
     void setUp() {
@@ -29,9 +29,9 @@ public class EncodedFileListTest {
         encodedFileList = new EncodedFileList(fileList);
         file = new File("src\\test\\resources\\test.zip");
         shiftJis = Charset.forName("Shift_JIS");
-        eucJp = Charset.forName("euc-jp");
+        fileShiftJis = new File("src\\test\\resources\\testShiftJis.zip");
         utf8 = Charset.forName("UTF-8");
-        iso2022jp = Charset.forName("ISO-2022-JP");
+        fileUtf8 = new File("src\\test\\resources\\testUtf8.zip");
     }
 
     /**
@@ -40,16 +40,24 @@ public class EncodedFileListTest {
      */
     @Test
     void testCollect() {
-        List<Charset> charsets = Arrays.asList(shiftJis, utf8, iso2022jp);
-        encodedFileList.collect(file, charsets);
+        encodedFileList.collectFile(fileShiftJis, shiftJis, utf8);
 
-        assertEquals(3, encodedFileList.size());
-        assertEquals(file, encodedFileList.get(0).file());
+        assertEquals(2, encodedFileList.size());
+        assertEquals(fileShiftJis, encodedFileList.get(0).file());
         assertEquals(shiftJis, encodedFileList.get(0).charset());
-        assertEquals(file, encodedFileList.get(1).file());
+        assertEquals(fileShiftJis, encodedFileList.get(1).file());
         assertEquals(utf8, encodedFileList.get(1).charset());
-        assertEquals(file, encodedFileList.get(2).file());
-        assertEquals(iso2022jp, encodedFileList.get(2).charset());
+    }
+
+    @Test
+    void testCollectFiles() {
+        encodedFileList.collectCharset(utf8, fileShiftJis, fileUtf8);
+
+        assertEquals(2, encodedFileList.size());
+        assertEquals(utf8, encodedFileList.get(0).charset());
+        assertEquals(fileShiftJis, encodedFileList.get(0).file());
+        assertEquals(utf8, encodedFileList.get(1).charset());
+        assertEquals(fileUtf8, encodedFileList.get(1).file());
     }
 
     /**
@@ -58,7 +66,7 @@ public class EncodedFileListTest {
      */
     @Test
     void testCollectNullFile() {
-        List<Charset> charsets = Arrays.asList(shiftJis, utf8, iso2022jp);
+        List<Charset> charsets = Arrays.asList(shiftJis, utf8);
         assertThrows(NullPointerException.class, () -> encodedFileList.collect(null, charsets));
     }
 
@@ -67,8 +75,17 @@ public class EncodedFileListTest {
      * files with null charsets.
      */
     @Test
-    void testCollectNullCharsets() {
-        assertThrows(NullPointerException.class, () -> encodedFileList.collect(file, null));
+    void testCollectFileNullCharsets() {
+        assertThrows(NullPointerException.class, () -> encodedFileList.collectFile(file, (Charset[]) null));
+    }
+
+    /**
+     * Test case to verify that a NullPointerException is thrown when collecting
+     * files with null charsets.
+     */
+    @Test
+    void testCollectCharsetNullFiles() {
+        assertThrows(NullPointerException.class, () -> encodedFileList.collectCharset(shiftJis, (File[]) null));
     }
 
     /**
@@ -78,11 +95,11 @@ public class EncodedFileListTest {
      */
     @Test
     void testFindFirstValidZipFile() {
-        encodedFileList.collect(file, Arrays.asList(utf8, iso2022jp, shiftJis, eucJp));
+        encodedFileList.collect(Arrays.asList(fileShiftJis), Arrays.asList(utf8, shiftJis));
         Optional<EncodedFile> result = encodedFileList.findFirstValidZipFile();
         assertTrue(result.isPresent());
         result.ifPresent(encodedFile -> {
-            assertEquals(file, encodedFile.file());
+            assertEquals(fileShiftJis, encodedFile.file());
             assertEquals(shiftJis, encodedFile.charset());
             try (var zipFile = encodedFile.zipFile()) {
                 assertNotNull(zipFile);
@@ -97,9 +114,32 @@ public class EncodedFileListTest {
      * when there are no valid zip files in the encoded file list.
      */
     @Test
-    void testFindFirstValidZipFileNoValidFile() {
-        encodedFileList.collect(file, Arrays.asList(utf8, iso2022jp));
+    void testFindFirstValidZipFileNoValidFileByFile() {
+        encodedFileList.collectFile(fileShiftJis, utf8);
         Optional<EncodedFile> result = encodedFileList.findFirstValidZipFile();
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void testFindFirstValidZipFileNoValidFileByCharset() {
+        encodedFileList.collectCharset(utf8, fileShiftJis);
+        Optional<EncodedFile> result = encodedFileList.findFirstValidZipFile();
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testAvailables() {
+        encodedFileList.collect(Arrays.asList(fileShiftJis, fileUtf8),
+                Arrays.asList(utf8, shiftJis));
+        assertEquals(4, encodedFileList.size());
+        EncodedFileList result = encodedFileList.availables();
+        assertEquals(2, result.size());
+        //
+        assertEquals(fileShiftJis, result.get(0).file());
+        assertEquals(shiftJis, result.get(0).charset());
+        //
+        assertEquals(fileUtf8, result.get(1).file());
+        assertEquals(utf8, result.get(1).charset());
+    }
+
 }
