@@ -11,8 +11,6 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipFile;
-import java.util.Enumeration;
-import java.util.zip.ZipEntry;
 
 import org.apache.commons.collections4.list.AbstractListDecorator;
 
